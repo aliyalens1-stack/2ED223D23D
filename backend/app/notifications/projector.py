@@ -49,6 +49,12 @@ from pymongo.errors import DuplicateKeyError
 
 from app.core.db import get_db
 from app.core.security import verify_admin_token, verify_user_token
+# P6.B.3 — Attribution wiring for /api/admin/notifications/* mutations.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 # Sprint Customer-Notify-1 — route-stage deny list. Even though the
 # legacy projector below only handles snake_case kinds (report_submitted,
@@ -588,6 +594,7 @@ async def backfill(
     limit: int = Query(200, ge=1, le=2000),
     kind: Optional[str] = Query(None),
     _: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ):
     """
     Defensive ops repair. Walks the most recent `limit` timeline events
@@ -610,6 +617,18 @@ async def backfill(
     async for ev in cursor:
         scanned += 1
         inserted += await project_event(ev)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="notifications.backfill",
+            domain="other",
+            entity_id="backfill_batch",
+            extra={"scanned": scanned, "inserted": inserted, "limit": limit, "kind": kind},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[projector] attribution notifications.backfill failed: {_attr_e}")
     return {"scanned": scanned, "inserted": inserted}
 
 
@@ -663,6 +682,7 @@ def _validate_admin_send_payload(body: Dict[str, Any]) -> Optional[str]:
 async def admin_send(
     request: Request,
     payload: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ):
     """
     Sprint A1 — admin-initiated notification broadcast.
@@ -740,6 +760,23 @@ async def admin_send(
     # same query the projector will run).
     recipients_ids = await _resolve_broadcast_recipients(db, metadata)
     projected = await project_event(event_doc)
+
+    # P6.B.3 — Attribution: admin broadcast send.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="notifications.admin_send",
+            domain="user",
+            entity_id=event_id,
+            extra={"targetType": (body.get("target") or {}).get("type"),
+                   "recipients": len(recipients_ids),
+                   "projected": projected,
+                   "titleLen": len(body.get("title") or ""),
+                   "bodyLen": len(body.get("body") or "")},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[projector] attribution notifications.admin_send failed: {_attr_e}")
 
     return {
         "ok": True,

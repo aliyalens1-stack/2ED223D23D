@@ -431,6 +431,7 @@ async def enter_review_endpoint(
     doc_id: str,
     request: Request,
     admin_ctx: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ):
     """
     Phase D Pass 1D-B — explicit governance transition.
@@ -450,7 +451,21 @@ async def enter_review_endpoint(
     """
     db = get_db()
     admin_id = admin_ctx.get("sub") if isinstance(admin_ctx, dict) else None
-    return await enter_review(doc_id, admin_id=admin_id, db=db)
+    result = await enter_review(doc_id, admin_id=admin_id, db=db)
+    # P6.B.3 — Attribution: governance transition into under_review.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="verification.enter_review",
+            domain="user",
+            entity_id=str(doc_id),
+            extra={"alreadyUnderReview": bool(result.get("alreadyUnderReview"))
+                                          if isinstance(result, dict) else None},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[verification_queue] attribution enter_review failed: {_attr_e}")
+    return result
 
 
 async def enter_review(

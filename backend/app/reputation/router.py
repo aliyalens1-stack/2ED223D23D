@@ -20,6 +20,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.db import get_db
 from app.core.security import verify_admin_token
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 from app.auto_requests.auth import get_user_id_required
 from app.reputation.engine import (
     HARD_FLOOR_TIER_MAX,
@@ -185,6 +191,7 @@ async def admin_reputation_overview(
 async def admin_force_recompute(
     user_id: str,
     _: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ) -> Dict[str, Any]:
     db = get_db()
     target = await db.users.find_one(
@@ -202,6 +209,18 @@ async def admin_force_recompute(
     snapshot = await recompute_reputation(user_id)
     if snapshot is None:
         raise HTTPException(500, "Recompute failed")
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="reputation.recompute",
+            domain="user",
+            entity_id=str(user_id),
+            extra={"role": role or kind},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[reputation] attribution reputation.recompute failed: {_attr_e}")
     return {"ok": True, "reputation": snapshot}
 
 

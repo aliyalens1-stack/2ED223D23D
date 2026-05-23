@@ -15,6 +15,12 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.db import db
 from app.core.security import verify_admin_token
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 
 router = APIRouter()
@@ -62,11 +68,22 @@ async def admin_forecast_status(_=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/forecast/retrain")
-async def admin_forecast_retrain(_=Depends(verify_admin_token)):
+async def admin_forecast_retrain(_=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Принудительно запустить переобучение всех моделей сейчас."""
     from app.ml.predictor import SKLEARN_OK, DemandPredictor
 
     if not SKLEARN_OK:
         raise HTTPException(status_code=503, detail="sklearn unavailable")
     await DemandPredictor.train_all_zones()
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="forecast.retrain",
+            domain="config",
+            entity_id=str("forecast_model"),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[admin_forecast_retrain] attribution forecast.retrain failed: {_attr_e}")
     return {"status": "retrained", "metadata": DemandPredictor.metadata}

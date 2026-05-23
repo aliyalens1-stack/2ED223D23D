@@ -21,6 +21,12 @@ from pydantic import BaseModel, Field
 
 from app.core.db import get_db
 from app.core.security import verify_admin_token
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 from app.auto_requests.auth import get_user_id_required
 from app.assignments.engine import (
     accept_assignment,
@@ -109,6 +115,7 @@ class CreateAssignmentBody(BaseModel):
 async def admin_create(
     body: CreateAssignmentBody,
     _: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ) -> Dict[str, Any]:
     loc = None
     if body.jobLat is not None and body.jobLng is not None:
@@ -127,6 +134,21 @@ async def admin_create(
     )
     if not asg:
         raise HTTPException(400, "Cannot create assignment (inspector missing or hard-floored without manualOverride)")
+    # P6.B.3 — Attribution.
+    try:
+        db = get_db()
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="assignment.create",
+            domain="other",
+            entity_id=str(asg.get("id") if isinstance(asg, dict) else "unknown"),
+            extra={"jobId": body.jobId, "inspectorId": body.inspectorId,
+                   "manualOverride": body.manualOverride,
+                   "priority": body.priority},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[assignments] attribution assignment.create failed: {_attr_e}")
     return {"ok": True, "assignment": asg}
 
 
@@ -160,6 +182,7 @@ async def admin_list(
 async def admin_cancel(
     assignment_id: str,
     payload: dict = Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
 ) -> Dict[str, Any]:
     actor = (payload or {}).get("email") or (payload or {}).get("sub")
     code, row = await cancel_assignment(assignment_id, admin_actor=actor)
@@ -167,6 +190,21 @@ async def admin_cancel(
         raise HTTPException(404, "Assignment not found")
     if code == "already_accepted":
         raise HTTPException(409, "Cannot cancel an accepted assignment")
+    # P6.B.3 — Attribution.
+    try:
+        db = get_db()
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="assignment.cancel",
+            domain="other",
+            entity_id=str(assignment_id),
+            extra={"code": code,
+                   "jobId": (row or {}).get("jobId") if isinstance(row, dict) else None,
+                   "inspectorId": (row or {}).get("inspectorId") if isinstance(row, dict) else None},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[assignments] attribution assignment.cancel failed: {_attr_e}")
     return {"ok": True, "status": code, "assignment": row}
 
 

@@ -60,6 +60,12 @@ from app.core.geo import haversine, resolve_zone
 from app.core.realtime import emit_realtime_event
 from app.core.security import verify_admin_token
 from app.core.utils import now_utc, uid
+# P6.B.2 — Attribution wiring for /api/admin/ranking/recalculate.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 
 logger = logging.getLogger("server")
@@ -1043,7 +1049,25 @@ async def admin_ranking_weights_zone(zone_id: str, _=Depends(verify_admin_token)
 
 
 @router.post("/api/admin/ranking/recalculate")
-async def admin_ranking_recalculate(force: bool = False, _=Depends(verify_admin_token)):
+async def admin_ranking_recalculate(
+    force: bool = False,
+    _=Depends(verify_admin_token),
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
+):
     """Force a ranking-weights refit immediately (instead of waiting for the 5-min cycle)."""
     summary = await _recalculate_ranking_weights(force=force)
+    # P6.B.2 — Attribution: governance trail for ranking refit.
+    try:
+        db_ = get_db()
+        await record_admin_mutation(
+            db_, ctx_attr,
+            action="ranking.recalculate",
+            domain="config",
+            entity_id="ranking_weights",
+            extra={"force": bool(force),
+                   "weightsKeys": sorted(list((summary or {}).get("weights", {}).keys())) if isinstance(summary, dict) else None,
+                   "totalProvidersInRefit": (summary or {}).get("totalProvidersInRefit") if isinstance(summary, dict) else None},
+        )
+    except Exception as _attr_e:
+        ctx.logger.warning(f"[quick_request] attribution ranking.recalculate failed: {_attr_e}")
     return {"success": True, **summary}

@@ -31,6 +31,12 @@ from fastapi import APIRouter, Depends
 from app.core.db import db
 from app.core.security import verify_admin_token
 from app.core.utils import now_utc
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 from app.marketplace.clusters import CLUSTERS, DEFAULT_CLUSTER
 from app.push import send_push
 
@@ -302,6 +308,21 @@ async def admin_reactivation_stats():
 
 # ─── Admin: manual trigger (dev / verification) ──────────────────────
 @router.post("/api/admin/growth/reactivation/run", dependencies=[Depends(verify_admin_token)])
-async def admin_reactivation_run():
+async def admin_reactivation_run(ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Force one sweep cycle now and return counters."""
-    return await reactivation_sweep()
+    result = await reactivation_sweep()
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="growth.reactivation_run",
+            domain="user",
+            entity_id="reactivation_batch",
+            extra={"resultKeys": sorted(list(result.keys())) if isinstance(result, dict) else None,
+                   "sweptCount": (result.get("sweptCount") if isinstance(result, dict) else None),
+                   "notifiedCount": (result.get("notifiedCount") if isinstance(result, dict) else None)},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[admin_reactivation_run] attribution growth.reactivation_run failed: {_attr_e}")
+    return result

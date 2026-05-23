@@ -380,7 +380,11 @@ class StripeRefundBody(BaseModel):
 
 
 @router.post("/api/payments/stripe/escrow/refund")
-async def refund_escrow(body: StripeRefundBody, _: dict = Depends(verify_admin_token)):
+async def refund_escrow(
+    body: StripeRefundBody,
+    _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
+):
     db = get_db()
     pay = await db.service_payments.find_one({"id": body.paymentId}, {"_id": 0})
     if not pay:
@@ -408,6 +412,30 @@ async def refund_escrow(body: StripeRefundBody, _: dict = Depends(verify_admin_t
         {"$push": {"stripeRefunds": refund_record},
          "$set": {"updatedAt": _now_iso()}},
     )
+    # P6.B.2 — Attribution: governance trail for admin-driven Stripe refund.
+    # This is a MONEY MUTATION on Stripe (real or sandbox) — must carry attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx,
+            action="payment.stripe_refund",
+            domain="payment",
+            entity_id=body.paymentId,
+            payment_kind="refund.requested",
+            extra={
+                "stripeRefundId":   refund.get("refundId"),
+                "stripePIId":       pi_id,
+                "amountCents":      amount_cents if amount_cents is not None else (
+                                       int(pay.get("amount", 0) * 100)),
+                "currency":         pay.get("currency"),
+                "reason":           body.reason,
+                "sandbox":          bool(refund.get("sandbox", True)),
+                "providerId":       pay.get("providerId"),
+                "customerId":       pay.get("customerId"),
+                "requestId":        pay.get("requestId"),
+            },
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[connect] attribution stripe_refund failed: {_attr_e}")
     return refund
 
 

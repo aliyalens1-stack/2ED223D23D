@@ -38,6 +38,12 @@ from pydantic import BaseModel, Field
 from app.core.db import db
 from app.core.security import verify_admin_token, verify_user_token
 from app.core.utils import now_utc, uid
+# P6.B.2 — Attribution wiring for /api/admin/chat/threads/{id}/reply.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 router = APIRouter(prefix="/api", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -358,7 +364,11 @@ async def admin_list_messages(thread_id: str):
 
 
 @router.post("/admin/chat/threads/{thread_id}/reply", dependencies=[Depends(verify_admin_token)])
-async def admin_reply(thread_id: str, body: SendMessageRequest):
+async def admin_reply(
+    thread_id: str,
+    body: SendMessageRequest,
+    ctx_attr: AttributionContext = Depends(get_attribution_context),
+):
     t = await db.chat_threads.find_one({"id": thread_id}, {"_id": 0})
     if not t:
         raise HTTPException(404, "Thread not found")
@@ -382,6 +392,20 @@ async def admin_reply(thread_id: str, body: SendMessageRequest):
             body.text[:140],
             action_url=f"/chat/{thread_id}",
         )
+    # P6.B.2 — Attribution: governance trail for admin/support reply.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="chat.admin_reply",
+            domain="other",
+            entity_id=thread_id,
+            extra={"threadType": t.get("type"),
+                   "participantUserId": user_id,
+                   "messageId": msg["id"],
+                   "textLen": len(body.text or "")},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[chat] attribution admin_reply failed: {_attr_e}")
     return {"message": msg}
 
 

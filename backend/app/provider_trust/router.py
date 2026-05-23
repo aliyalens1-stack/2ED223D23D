@@ -26,6 +26,12 @@ from pydantic import BaseModel, Field
 
 from app.core.db import get_db
 from app.core.security import verify_admin_token, verify_user_token
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 from app.provider_trust.engine import (
     ALL_TAGS,
     POSITIVE_TAGS,
@@ -407,8 +413,19 @@ async def admin_list_reviews(
 
 
 @router.post("/api/admin/trust/recompute/{provider_id}")
-async def admin_recompute(provider_id: str, _: dict = Depends(verify_admin_token)):
+async def admin_recompute(provider_id: str, _: dict = Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Admin manual recompute (used after backfill)."""
     db = get_db()
     snap = await recompute_provider_reputation(db, provider_id)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            get_db(), ctx_attr,
+            action="trust.recompute",
+            domain="user",
+            entity_id=str(provider_id),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[admin_recompute] attribution trust.recompute failed: {_attr_e}")
     return {"snapshot": snap}

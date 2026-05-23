@@ -38,6 +38,12 @@ from fastapi.responses import JSONResponse
 
 from app.core.db import get_db
 from app.core.security import verify_admin_token
+# P6.B.2 — Attribution wiring for /api/admin/customer-notify/* mutations.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 from app.notifications.audit import (
     project_and_audit,
     synthesize_preview,
@@ -260,6 +266,7 @@ async def preview(
 async def manual_project(
     request: Request,
     _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
 ):
     """Manually trigger the dry-run pipeline for one timeline event.
     Useful for backfill or replay testing. Idempotent — the unique
@@ -280,6 +287,20 @@ async def manual_project(
                      "message": "event object is required"},
         )
     result = await on_customer_event(event)
+    # P6.B.2 — Attribution: operator-triggered manual replay.
+    try:
+        db = get_db()
+        await record_admin_mutation(
+            db, ctx,
+            action="customer_notify.project",
+            domain="other",
+            entity_id=str(event.get("id") or event.get("kind") or "unknown"),
+            extra={"kind": event.get("kind"),
+                   "sourceTimelineId": event.get("id"),
+                   "outcomeKeys": sorted(list(result.keys())) if isinstance(result, dict) else None},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[customer_pipeline] attribution project failed: {_attr_e}")
     return result
 
 
@@ -442,6 +463,7 @@ async def register_push_token(
 async def admin_test_send(
     request: Request,
     _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
 ):
     """Admin smoke endpoint for verifying provider integration end-to-
     end. Bypasses recipient resolution; sends ONE push to the supplied
@@ -459,11 +481,29 @@ async def admin_test_send(
         body="Provider integration probe. (Notify-3A test-send)",
         data={"kind": "test.probe", "surface": "continuity"},
     )
+    # P6.B.2 — Attribution: operator-triggered provider probe.
+    try:
+        db = get_db()
+        # Mask token in audit log (last 4 chars only).
+        tok_tail = token[-4:] if len(token) >= 4 else "****"
+        await record_admin_mutation(
+            db, ctx,
+            action="customer_notify.test_send",
+            domain="other",
+            entity_id=f"token:{tok_tail}",
+            extra={"ok": bool(result.get("ok")) if isinstance(result, dict) else None,
+                   "providerStatus": result.get("status") if isinstance(result, dict) else None},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[customer_pipeline] attribution test_send failed: {_attr_e}")
     return result
 
 
 @router.post("/api/admin/customer-notify/receipts/poll-now")
-async def admin_receipts_poll_now(_: dict = Depends(verify_admin_token)):
+async def admin_receipts_poll_now(
+    _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
+):
     """Manually trigger ONE reconciliation pass over pending receipts
     (Notify-3A Phase B). Background loop runs every 180s; this endpoint
     is for forensic / observability use — speeds up "did my receipt
@@ -475,6 +515,19 @@ async def admin_receipts_poll_now(_: dict = Depends(verify_admin_token)):
     from app.notifications.receipts import poll_receipts_once
     db = get_db()
     summary = await poll_receipts_once(db)
+    # P6.B.2 — Attribution: operator-triggered forensic reconciliation.
+    try:
+        await record_admin_mutation(
+            db, ctx,
+            action="customer_notify.receipts_poll",
+            domain="other",
+            entity_id="receipts_poller",
+            extra={"summaryKeys": sorted(list(summary.keys())) if isinstance(summary, dict) else None,
+                   "polled": summary.get("polled") if isinstance(summary, dict) else None,
+                   "updated": summary.get("updated") if isinstance(summary, dict) else None},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[customer_pipeline] attribution receipts_poll failed: {_attr_e}")
     return summary
 
 
@@ -507,6 +560,7 @@ async def admin_list_suppressions(
 async def admin_manual_suppression_append(
     request: Request,
     _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
 ):
     """Append ONE manual suppression event (admin override).
 
@@ -544,6 +598,20 @@ async def admin_manual_suppression_append(
         provider_event_id=f"admin:{_uuid.uuid4().hex}",
         reason=str(reason)[:128],
     )
+    # P6.B.2 — Attribution: admin override on user comms channel.
+    try:
+        await record_admin_mutation(
+            db, ctx,
+            action="customer_notify.suppression.manual_append",
+            domain="user",
+            entity_id=str(address or "unknown"),
+            extra={"channel": channel, "effect": effect,
+                   "reason": reason,
+                   "rowId": (result or {}).get("rowId") if isinstance(result, dict) else None,
+                   "outcome": (result or {}).get("reason") if isinstance(result, dict) else None},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[customer_pipeline] attribution suppression.manual_append failed: {_attr_e}")
     return result
 
 
@@ -700,6 +768,7 @@ async def admin_preference_snapshot(
 async def admin_manual_preference_append(
     request: Request,
     _: dict = Depends(verify_admin_token),
+    ctx: AttributionContext = Depends(get_attribution_context),
 ):
     """Append ONE preference row on behalf of a recipient (admin override).
 
@@ -762,4 +831,18 @@ async def admin_manual_preference_append(
         source=source,
         reason=str(reason)[:128],
     )
+    # P6.B.2 — Attribution: admin override on recipient preferences.
+    try:
+        await record_admin_mutation(
+            db, ctx,
+            action="customer_notify.preference.manual_append",
+            domain="user",
+            entity_id=str(user_id),
+            extra={"channel": channel, "effect": effect, "kind": kind,
+                   "source": source, "reason": reason,
+                   "rowId": (result or {}).get("rowId") if isinstance(result, dict) else None,
+                   "outcome": (result or {}).get("reason") if isinstance(result, dict) else None},
+        )
+    except Exception as _attr_e:
+        logger.warning(f"[customer_pipeline] attribution preference.manual_append failed: {_attr_e}")
     return result

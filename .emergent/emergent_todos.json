@@ -1,42 +1,46 @@
 [
   {
-    "content": "Backup current /app contents (.env files protected)",
+    "content": "P6.B.3 — Full inventory: list every admin POST/PUT/DELETE handler not yet wired",
     "status": "completed"
   },
   {
-    "content": "Copy repo (backend, frontend, admin, web-app, shared, memory, docs, ops, tests) into /app",
+    "content": "P6.B.3 — Classification pass: WIRE vs EXEMPT for each handler, with constitutional reason",
     "status": "completed"
   },
   {
-    "content": "Restore .env files + add EXPO_PUBLIC_BACKEND_URL",
+    "content": "P6.B.3 — Wire governance/router.py (17 handlers, all done)",
     "status": "completed"
   },
   {
-    "content": "Install backend Python deps (pip install -r requirements.txt)",
+    "content": "P6.B.3 — Wire growth/reactivation.py",
     "status": "completed"
   },
   {
-    "content": "Install frontend (Expo) deps via yarn",
+    "content": "P6.B.3 — Wire assignments/router.py (admin_create + admin_cancel)",
     "status": "completed"
   },
   {
-    "content": "supervisorctl restart backend frontend, verify RUNNING",
+    "content": "P6.B.3 — Wire notifications/projector.py (backfill + admin_send)",
     "status": "completed"
   },
   {
-    "content": "Smoke tests: /api/health, /api/auth/login (3 roles), /api/services",
+    "content": "P6.B.3 — Wire provider_trust/router.py + reputation/router.py",
     "status": "completed"
   },
   {
-    "content": "Screenshot preview URL, validate UI renders",
+    "content": "P6.B.3 — Wire admin/forecast.py + billing/stripe_payments.py + admin/verification_queue.py (enter_review)",
     "status": "completed"
   },
   {
-    "content": "Produce fresh AUDIT report (E2 round, 2026-05-23)",
+    "content": "P6.B.3 — Lint + restart, verify no startup regression, OpenAPI count stable",
     "status": "completed"
   },
   {
-    "content": "Present audit & ask user where to focus next",
+    "content": "P6.B.3 — Live smoke: 6/6 representative wired handlers → admin_audit_log rows produced",
+    "status": "completed"
+  },
+  {
+    "content": "P6.B.3 — Write closure doc memory/P6_B_3_*.md with EXEMPTION MATRIX (constitutional)",
     "status": "completed"
   }
 ]

@@ -41,6 +41,12 @@ from app.core.security import verify_admin_token
 from app.core.utils import now_utc, uid
 # Phase 1B Tier 3 — pure sync cluster enrichment for payment writers.
 from app.core.cluster_writer import enrich_with_cluster, cluster_from_payment_source
+# P6.B.3 — Attribution wiring.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 # Импортируем каталог продуктов из существующего billing.router (single source of truth)
 from app.billing.router import BILLING_PRODUCTS
@@ -140,7 +146,7 @@ async def admin_get_stripe_config(_=Depends(verify_admin_token)):
 @router.post("/api/admin/billing/stripe-config")
 async def admin_set_stripe_config(
     payload: StripeConfigPayload, _=Depends(verify_admin_token)
-):
+, ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Upsert stripe config in platform_settings.
 
     Поля, переданные как None — НЕ обновляются. Это позволяет, например,
@@ -163,6 +169,18 @@ async def admin_set_stripe_config(
     await db.platform_settings.update_one(
         {"type": STRIPE_SETTINGS_KEY}, {"$set": update}, upsert=True
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            db, ctx_attr,
+            action="billing.stripe_config_update",
+            domain="integration_credential",
+            entity_id=str("stripe_billing_config"),
+            extra={"payloadKeys": sorted(list(payload.dict().keys())) if hasattr(payload, "dict") else None},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[admin_set_stripe_config] attribution billing.stripe_config_update failed: {_attr_e}")
     return {"status": "ok", "updated_fields": [k for k in update if k not in ("type", "updated_at")]}
 
 

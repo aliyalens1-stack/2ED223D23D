@@ -22,6 +22,12 @@ from app.core.context import ctx
 from app.core.realtime import emit_realtime_event
 from app.core.security import verify_admin_token
 from app.core.utils import now_utc, uid
+# P6.B.3 — Attribution wiring for /api/admin/* governance mutations.
+from app.core.attribution import (
+    AttributionContext,
+    get_attribution_context,
+    record_admin_mutation,
+)
 
 router = APIRouter(tags=["governance"])
 
@@ -55,7 +61,7 @@ def _pct(num, denom):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/api/admin/demand/push-providers")
-async def demand_push_providers(request: Request, admin_ctx: dict = Depends(verify_admin_token)):
+async def demand_push_providers(request: Request, admin_ctx: dict = Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Push notification to providers in a zone with high demand."""
     body = await request.json()
     zone_id = body.get("zoneId", "all")
@@ -80,11 +86,23 @@ async def demand_push_providers(request: Request, admin_ctx: dict = Depends(veri
         strategy="admin_default_repair", reason="legacy_taxi_admin_push",
     )
     await _db().governance_actions.insert_one(action_log)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="demand.push_providers",
+            domain="config",
+            entity_id=str("demand:all_zones"),
+            extra={"zoneId": zone_id, "targetCount": len(devices), "message": message},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution demand.push_providers failed: {_attr_e}")
     return {"status": "sent", "targetCount": len(devices), "action": _strip_enrichment(action_log)}
 
 
 @router.post("/api/admin/demand/{zone_id}/boost-supply")
-async def boost_supply(zone_id: str, request: Request, admin_ctx: dict = Depends(verify_admin_token)):
+async def boost_supply(zone_id: str, request: Request, admin_ctx: dict = Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Boost supply in a zone - increase visibility for providers."""
     body = await request.json()
     boost_level = body.get("boostLevel", 1.5)
@@ -106,6 +124,18 @@ async def boost_supply(zone_id: str, request: Request, admin_ctx: dict = Depends
         source_field="zoneId",
     )
     await _db().governance_actions.insert_one(action_log)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="demand.boost_supply",
+            domain="config",
+            entity_id=str(f"zone:{zone_id}"),
+            extra={"zoneId": zone_id, "boostLevel": boost_level, "durationMinutes": duration_minutes},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution demand.boost_supply failed: {_attr_e}")
     return {"status": "boosted", "zoneId": zone_id, "action": _strip_enrichment(action_log)}
 
 
@@ -210,7 +240,7 @@ async def provider_behavior_overview(_=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/providers/behavior/bulk-action")
-async def provider_behavior_bulk_action(request: Request, _=Depends(verify_admin_token)):
+async def provider_behavior_bulk_action(request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Execute bulk action on providers — real affectedCount."""
     db = _db()
     body = await request.json()
@@ -243,6 +273,18 @@ async def provider_behavior_bulk_action(request: Request, _=Depends(verify_admin
         strategy="admin_default_repair", reason="legacy_taxi_admin_bulk_behavior",
     )
     await db.governance_actions.insert_one(action_log)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="providers.bulk_action",
+            domain="user",
+            entity_id=str("bulk"),
+            extra={"affectedCount": int(affected or 0), "action": action},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution providers.bulk_action failed: {_attr_e}")
     return {"status": "executed", "action": _strip_enrichment(action_log)}
 
 
@@ -265,7 +307,7 @@ async def get_flow_config(request: Request, _=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/flow/config")
-async def update_flow_config(request: Request, _=Depends(verify_admin_token)):
+async def update_flow_config(request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Update flow configuration — proxy through to NestJS if available."""
     body = await request.json()
     try:
@@ -277,6 +319,17 @@ async def update_flow_config(request: Request, _=Depends(verify_admin_token)):
             return Response(content=resp.content, status_code=resp.status_code, media_type='application/json')
     except Exception:
         pass
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="flow.config_update",
+            domain="config",
+            entity_id=str("flow_config"),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution flow.config_update failed: {_attr_e}")
     return {"status": "updated", "config": body}
 
 
@@ -378,7 +431,7 @@ async def demand_action_recommendations(zoneId: str = "all", _=Depends(verify_ad
 
 
 @router.post("/api/admin/demand/actions/run")
-async def demand_action_run(request: Request, admin_ctx: dict = Depends(verify_admin_token)):
+async def demand_action_run(request: Request, admin_ctx: dict = Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Execute a demand action chain — real before/after ratios from zone snapshots."""
     db = _db()
     body = await request.json()
@@ -433,6 +486,17 @@ async def demand_action_run(request: Request, admin_ctx: dict = Depends(verify_a
     }
     await db.demand_action_executions.insert_one(execution)
     execution.pop("_id", None)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="demand.actions_run",
+            domain="config",
+            entity_id=str("demand_actions"),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution demand.actions_run failed: {_attr_e}")
     return {"status": "executed", "execution": execution}
 
 
@@ -454,7 +518,7 @@ async def get_revenue_experiments(_=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/revenue/experiments")
-async def create_revenue_experiment(request: Request, _=Depends(verify_admin_token)):
+async def create_revenue_experiment(request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     experiment = {
         "id": uid(),
@@ -469,24 +533,58 @@ async def create_revenue_experiment(request: Request, _=Depends(verify_admin_tok
     }
     await _db().revenue_experiments.insert_one(experiment)
     experiment.pop("_id", None)
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="revenue.experiment_create",
+            domain="config",
+            entity_id=str((experiment.get("id") if isinstance(experiment, dict) else "unknown")),
+            extra={"name": (experiment.get("name") if isinstance(experiment, dict) else None)},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution revenue.experiment_create failed: {_attr_e}")
     return experiment
 
 
 @router.post("/api/admin/revenue/experiments/{experiment_id}/start")
-async def start_revenue_experiment(experiment_id: str, _=Depends(verify_admin_token)):
+async def start_revenue_experiment(experiment_id: str, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     await _db().revenue_experiments.update_one(
         {"id": experiment_id},
         {"$set": {"status": "running", "startedAt": now_utc().isoformat()}},
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="revenue.experiment_start",
+            domain="config",
+            entity_id=str(experiment_id),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution revenue.experiment_start failed: {_attr_e}")
     return {"status": "running", "experimentId": experiment_id}
 
 
 @router.post("/api/admin/revenue/experiments/{experiment_id}/stop")
-async def stop_revenue_experiment(experiment_id: str, _=Depends(verify_admin_token)):
+async def stop_revenue_experiment(experiment_id: str, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     await _db().revenue_experiments.update_one(
         {"id": experiment_id},
         {"$set": {"status": "stopped", "endedAt": now_utc().isoformat()}},
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="revenue.experiment_stop",
+            domain="config",
+            entity_id=str(experiment_id),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution revenue.experiment_stop failed: {_attr_e}")
     return {"status": "stopped", "experimentId": experiment_id}
 
 
@@ -617,7 +715,7 @@ async def get_push_devices(userId: str = None, role: str = None):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/api/admin/providers/{slug}/promote")
-async def promote_provider(slug: str, request: Request, _=Depends(verify_admin_token)):
+async def promote_provider(slug: str, request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Promote a provider — boost their ranking position."""
     db = _db()
     body = await request.json()
@@ -639,20 +737,42 @@ async def promote_provider(slug: str, request: Request, _=Depends(verify_admin_t
         "id": uid(), "type": "promote", "slug": slug, "boost": boost,
         "label": label, "endsAt": ends_at, "createdAt": now_utc().isoformat(),
     })
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="provider.promote",
+            domain="user",
+            entity_id=str(slug),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution provider.promote failed: {_attr_e}")
     return {"status": "promoted", "slug": slug, "boost": boost, "label": label}
 
 
 @router.post("/api/admin/providers/{slug}/unpromote")
-async def unpromote_provider(slug: str, _=Depends(verify_admin_token)):
+async def unpromote_provider(slug: str, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     await _db().organizations.update_one(
         {"slug": slug},
         {"$set": {"isPromoted": False, "promotionBoost": 0, "promotedLabel": None, "promotionPlan": "none"}},
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="provider.unpromote",
+            domain="user",
+            entity_id=str(slug),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution provider.unpromote failed: {_attr_e}")
     return {"status": "unpromoted", "slug": slug}
 
 
 @router.post("/api/admin/providers/{slug}/priority-access")
-async def grant_priority_access(slug: str, request: Request, _=Depends(verify_admin_token)):
+async def grant_priority_access(slug: str, request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     """Grant priority request access to provider."""
     db = _db()
     body = await request.json()
@@ -674,15 +794,37 @@ async def grant_priority_access(slug: str, request: Request, _=Depends(verify_ad
         "id": uid(), "type": "priority_grant", "slug": slug,
         "level": level, "window": window, "createdAt": now_utc().isoformat(),
     })
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="provider.priority_access_grant",
+            domain="user",
+            entity_id=str(slug),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution provider.priority_access_grant failed: {_attr_e}")
     return {"status": "priority_granted", "slug": slug, "level": level, "windowSeconds": window}
 
 
 @router.post("/api/admin/providers/{slug}/priority-access/remove")
-async def remove_priority_access(slug: str, _=Depends(verify_admin_token)):
+async def remove_priority_access(slug: str, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     await _db().organizations.update_one(
         {"slug": slug},
         {"$set": {"hasPriorityAccess": False, "priorityLevel": 0, "priorityWindowSeconds": 0}},
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="provider.priority_access_remove",
+            domain="user",
+            entity_id=str(slug),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution provider.priority_access_remove failed: {_attr_e}")
     return {"status": "priority_removed", "slug": slug}
 
 
@@ -789,13 +931,24 @@ async def get_distribution_config_internal(_=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/distribution/config")
-async def update_distribution_config_internal(request: Request, _=Depends(verify_admin_token)):
+async def update_distribution_config_internal(request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     await _db().distribution_config.update_one(
         {"type": "global"},
         {"$set": {**body, "type": "global", "updatedAt": now_utc().isoformat()}},
         upsert=True,
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="distribution.config_update",
+            domain="config",
+            entity_id=str("distribution_config"),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution distribution.config_update failed: {_attr_e}")
     return {"status": "updated", "config": body}
 
 
@@ -860,7 +1013,7 @@ async def zone_history(zone_id: str, hours: int = 24, _=Depends(verify_admin_tok
 
 
 @router.post("/api/admin/zones/{zone_id}/override-surge")
-async def override_zone_surge(zone_id: str, request: Request, _=Depends(verify_admin_token)):
+async def override_zone_surge(zone_id: str, request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     surge = body.get("surgeMultiplier", 1.0)
     await _db().zones.update_one(
@@ -868,27 +1021,63 @@ async def override_zone_surge(zone_id: str, request: Request, _=Depends(verify_a
         {"$set": {"surgeMultiplier": surge, "updatedAt": now_utc().isoformat()}},
     )
     await emit_realtime_event("zone:surge_changed", {"zoneId": zone_id, "surge": surge})
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="zone.override_surge",
+            domain="config",
+            entity_id=str(f"zone:{zone_id}"),
+            extra={"zoneId": zone_id, "surgeMultiplier": surge},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution zone.override_surge failed: {_attr_e}")
     return {"status": "surge_overridden", "zoneId": zone_id, "surgeMultiplier": surge}
 
 
 @router.post("/api/admin/zones/{zone_id}/push-providers")
-async def push_zone_providers(zone_id: str, request: Request, _=Depends(verify_admin_token)):
+async def push_zone_providers(zone_id: str, request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     message = body.get("message", "Новые заявки в вашей зоне!")
     zone = await _db().zones.find_one({"id": zone_id}, {"_id": 0})
     if not zone:
         raise HTTPException(404, "Zone not found")
     await emit_realtime_event("zone:provider_push", {"zoneId": zone_id, "message": message, "zoneName": zone.get("name")})
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="zone.push_providers",
+            domain="config",
+            entity_id=str(f"zone:{zone_id}"),
+            extra={"zoneId": zone_id},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution zone.push_providers failed: {_attr_e}")
     return {"status": "pushed", "zoneId": zone_id, "message": message}
 
 
 @router.post("/api/admin/zones/{zone_id}/config")
-async def update_zone_config(zone_id: str, request: Request, _=Depends(verify_admin_token)):
+async def update_zone_config(zone_id: str, request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     allowed = {"surgeThresholds", "fanoutMultiplier", "etaTarget", "maxProviders", "name", "color"}
     update = {k: v for k, v in body.items() if k in allowed}
     update["updatedAt"] = now_utc().isoformat()
     await _db().zones.update_one({"id": zone_id}, {"$set": update})
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="zone.config_update",
+            domain="config",
+            entity_id=str(f"zone:{zone_id}"),
+            extra={"zoneId": zone_id},
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution zone.config_update failed: {_attr_e}")
     return {"status": "updated", "zoneId": zone_id, "updated": list(update.keys())}
 
 
@@ -906,13 +1095,24 @@ async def get_zone_distribution_config(_=Depends(verify_admin_token)):
 
 
 @router.post("/api/admin/zones/distribution-config")
-async def update_zone_distribution_config(request: Request, _=Depends(verify_admin_token)):
+async def update_zone_distribution_config(request: Request, _=Depends(verify_admin_token), ctx_attr: AttributionContext = Depends(get_attribution_context)):
     body = await request.json()
     await _db().zone_distribution_config.update_one(
         {"type": "global"},
         {"$set": {**body, "type": "global", "updatedAt": now_utc().isoformat()}},
         upsert=True,
     )
+    # P6.B.3 — Attribution.
+    try:
+        await record_admin_mutation(
+            _db(), ctx_attr,
+            action="zone.distribution_config_update",
+            domain="config",
+            entity_id=str("all_zones"),
+        )
+    except Exception as _attr_e:
+        import logging as _lg
+        _lg.getLogger(__name__).warning(f"[governance] attribution zone.distribution_config_update failed: {_attr_e}")
     return {"status": "updated"}
 
 
