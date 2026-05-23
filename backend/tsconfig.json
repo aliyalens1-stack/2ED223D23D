@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@platform/*": ["../shared/*"]
+    }
+  },
+  "include": ["src/**/*", "../shared/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "../shared/**/__tests__/**",
+    "../shared/**/*.test.ts",
+    "../shared/**/*.spec.ts",
+    "../shared/domain/validators/vehicle.ts"
+  ]
+}

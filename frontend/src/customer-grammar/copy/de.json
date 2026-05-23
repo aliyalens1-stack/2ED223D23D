@@ -1,0 +1,79 @@
+{
+  "ui": {
+    "common.back": "Zurück",
+    "common.refresh": "Aktualisieren",
+    "common.reading": "Wird gelesen…",
+    "common.dash": "—",
+    "common.lastRead": "Zuletzt gelesen {{date}}",
+
+    "timeline.kicker": "INSPEKTION",
+    "timeline.title": "Verlauf der Prüfung",
+    "timeline.empty": "Noch kein Verlauf. Ziehen Sie nach unten, sobald der Inspektor beginnt.",
+    "timeline.crossToContinuity": "Aktueller Stand",
+    "timeline.crossToReport": "Bericht",
+    "timeline.error.notAvailable": "Prüfung nicht verfügbar.",
+    "timeline.error.auth": "Anmeldung erforderlich.",
+    "timeline.error.load": "Verlauf konnte nicht geladen werden.",
+
+    "continuity.kicker": "INSPEKTION",
+    "continuity.title": "Kontinuität",
+    "continuity.error.notAvailable": "Prüfung nicht verfügbar.",
+    "continuity.error.auth": "Anmeldung erforderlich.",
+    "continuity.error.load": "Kontinuität konnte nicht geladen werden.",
+    "continuity.insufficient": "Kontinuität der Prüfung ist noch nicht etabliert.",
+    "continuity.section.state": "Aktueller Stand der Kontinuität",
+    "continuity.section.interpretation": "Deutung",
+    "continuity.section.events": "Ereignisse der Kontinuität",
+    "continuity.events.empty": "Noch keine Ereignisse erfasst.",
+    "continuity.maturity.forming": "Im Aufbau",
+    "continuity.maturity.accumulating": "Wird ergänzt",
+    "continuity.maturity.established": "Vorhanden",
+    "continuity.maturity.delivered": "Übergeben",
+    "continuity.navToHistory": "Detaillierten Verlauf anzeigen",
+
+    "cognition.title": "Deutung der Prüfung",
+    "cognition.loading": "Wird geladen…",
+    "cognition.error.notAvailable": "Deutung nicht verfügbar.",
+    "cognition.error.auth": "Anmeldung erforderlich.",
+    "cognition.error.load": "Deutung konnte nicht geladen werden.",
+    "cognition.refresh": "Deutung aktualisieren",
+    "cognition.lastInterpreted": "Zuletzt gedeutet: {{date}}",
+    "cognition.navToHistory": "Wie wir hierhin kamen"
+  },
+  "events": {
+    "inspection.started":           { "title": "Inspektor hat mit der Prüfung begonnen",  "icon": "play-circle-outline" },
+    "report.submitted":             { "title": "Inspektor hat den Bericht abgeschlossen", "icon": "checkmark-done" },
+    "media.uploaded.vin":           { "title": "Foto zur Fahrzeug-Identifikation aufgenommen", "icon": "camera-outline" },
+    "media.uploaded.odometer":      { "title": "Kilometerstand fotografiert",             "icon": "camera-outline" },
+    "media.uploaded.damage":        { "title": "Detail-Foto aufgenommen",                 "icon": "camera-outline" },
+    "media.uploaded.registration":  { "title": "Foto vom Fahrzeugschein aufgenommen",     "icon": "document-outline" },
+    "media.uploaded.engine":        { "title": "Foto vom Motorraum aufgenommen",          "icon": "camera-outline" },
+    "media.uploaded.interior":      { "title": "Foto vom Innenraum aufgenommen",          "icon": "camera-outline" },
+    "media.uploaded.general":       { "title": "Foto aufgenommen",                        "icon": "camera-outline" },
+    "media.uploaded":               { "title": "Foto aufgenommen",                        "icon": "camera-outline" },
+    "item.flagged_critical":        { "title": "Inspektor hat einen Punkt vermerkt",      "icon": "eye-outline" },
+    "item.flagged_warning":         { "title": "Inspektor hat eine Beobachtung vermerkt", "icon": "eye-outline" }
+  },
+  "notifications": {
+    "inspection.started": {
+      "push":  { "title": "Prüfungs-Update",            "body": "Ihre Prüfung hat begonnen." },
+      "email": { "title": "Ihre Prüfung hat begonnen",  "body": "Der Inspektor ist vor Ort und hat mit der Prüfung Ihres Fahrzeugs begonnen. Sie erhalten eine weitere Nachricht, sobald der Bericht fertig ist." },
+      "sms":   { "title": null,                         "body": "Die Prüfung Ihres Fahrzeugs hat begonnen." }
+    },
+    "report.submitted": {
+      "push":  { "title": "Prüfungsbericht",             "body": "Der Bericht ist fertig." },
+      "email": { "title": "Ihr Prüfungsbericht ist fertig", "body": "Der Inspektor hat den Bericht zu Ihrem Fahrzeug abgeschlossen. Öffnen Sie den Bericht, um die Prüfung anzusehen und Ihre Entscheidung zu treffen." },
+      "sms":   { "title": null,                          "body": "Ihr Prüfungsbericht ist fertig." }
+    },
+    "item.flagged_critical": {
+      "push":  { "title": "Prüfungs-Update",                       "body": "Während der Prüfung wurde ein Punkt vermerkt." },
+      "email": { "title": "Ein Punkt wurde in Ihrer Prüfung vermerkt", "body": "Während der Prüfung hat der Inspektor einen Punkt an Ihrem Fahrzeug vermerkt. Den genauen Eintrag finden Sie im Prüfungsbericht, sobald er übergeben ist." },
+      "sms":   { "title": null,                                    "body": "In Ihrer Prüfung wurde ein Punkt vermerkt. Der Bericht folgt." }
+    },
+    "item.flagged_warning": {
+      "push":  { "title": "Prüfungs-Update",                              "body": "Während der Prüfung wurde eine Beobachtung vermerkt." },
+      "email": { "title": "Eine Beobachtung wurde in Ihrer Prüfung vermerkt", "body": "Während der Prüfung hat der Inspektor eine Beobachtung an Ihrem Fahrzeug vermerkt. Den Eintrag finden Sie im Prüfungsbericht nach der Übergabe." },
+      "sms":   { "title": null,                                           "body": "In Ihrer Prüfung wurde eine Beobachtung vermerkt. Der Bericht folgt." }
+    }
+  }
+}

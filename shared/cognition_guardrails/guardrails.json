@@ -1,0 +1,248 @@
+{
+  "$doctrine": "cognition_guardrails — single source of truth across web (Vite), mobile (Expo), and backend/CI (Python). DO NOT duplicate these strings anywhere else. All three layers (static / DOM / structural) read from this file. Adding to the lists tightens the guardrail; removing requires explicit doctrine review.",
+
+  "forbidden_lexicon": {
+    "$comment": "Words/phrases that MUST NOT appear in customer-facing surface copy. The mapper is the only source of customer text; any of these strings leaking into a surface means an operational/telemetry/AI/urgency word has crossed the boundary. Matching is case-insensitive substring on visible inner_text AND attributes (aria-label, placeholder, title, alt).",
+
+    "cognition_noise": [
+      "ai-powered",
+      " ai ",
+      "algorithm",
+      "machine learning",
+      "neural",
+      "confidence",
+      "probability",
+      "score",
+      "scoring",
+      "rating",
+      "accuracy",
+      "expert",
+      "guaranteed",
+      "risk score",
+      "safe investment",
+      "recommended purchase",
+      "vehicle passed",
+      "safe to buy",
+      "expert-approved",
+      "expert approved",
+      "green light",
+      "red flag",
+      "yellow flag",
+      "view ai report",
+      "open analysis",
+      "confidence summary"
+    ],
+
+    "operational_leak": [
+      "draft",
+      "flagged",
+      "queue",
+      "queued",
+      "system",
+      "internal",
+      "operational",
+      "telemetry",
+      "diagnostic"
+    ],
+
+    "urgency_theatre": [
+      "urgent",
+      "urgency",
+      "act now",
+      "limited time",
+      "hurry",
+      "expires soon",
+      "last chance"
+    ],
+
+    "form_thinking": [
+      "submit",
+      "submitted",
+      "ticket",
+      "required field",
+      "mandatory",
+      "step ",
+      "of step",
+      "progress bar",
+      "completion"
+    ],
+
+    "rejection_punitive": [
+      "rejected",
+      "failed",
+      "failure",
+      "error occurred",
+      "denied",
+      "blocked"
+    ],
+
+    "celebration": [
+      "success!",
+      "thank you",
+      "congratulations",
+      "well done",
+      "you did it"
+    ]
+  },
+
+  "forbidden_colors": {
+    "$comment": "Red palette is reserved for SYSTEM errors only. Customer-facing rejection / verification / continuity surfaces must use amber (warning) tones. These hex literals must not appear in customer-area surface source after the Step 3 cleanup.",
+    "red_rejection": [
+      "#7f1d1d",
+      "#2a1010",
+      "#fecaca",
+      "#fda4af",
+      "#1a0a0a",
+      "#5b1a1a"
+    ],
+    "red_class_fragments": [
+      "bg-rose-",
+      "text-rose-",
+      "border-rose-"
+    ]
+  },
+
+  "required_vocabulary": {
+    "$comment": "Phrases that MUST appear in each surface's source. These anchor the restrained doctrine — their presence is the structural marker that the surface speaks the continuity vocabulary.",
+
+    "intake": [
+      "Establish inspection context",
+      "Information may still be added later",
+      "Vehicle reference",
+      "Scheduling window"
+    ],
+    "establishment": [
+      "Inspection context established",
+      "Context recorded",
+      "References"
+    ],
+    "continuity": [
+      "Inspection continuity",
+      "Forming",
+      "Accumulating",
+      "Established",
+      "Delivered"
+    ],
+    "cognition": [
+      "Refresh interpretation",
+      "structurally_matters",
+      "remains_uncertain",
+      "supports_interpretation",
+      "may_require_review"
+    ]
+  },
+
+  "structural_invariants": {
+    "$comment": "Declarative assertions about DOM presence/absence in specific app states. The runner takes a state (e.g. {auth: customer, location: '/dashboard/request/new'}) and verifies these invariants. `present` = count >= 1, `absent` = count == 0. The doctrine of structural absence — pre-engagement bridges must NOT exist in DOM (no disabled state, no 'coming soon').",
+
+    "intake_initial": {
+      "url_pattern": "/dashboard/request/new",
+      "present": [
+        "request-intake-page",
+        "intake-title",
+        "intake-section-vehicle",
+        "intake-section-location",
+        "intake-section-scheduling",
+        "intake-incompleteness-note",
+        "intake-establish-btn"
+      ],
+      "absent": []
+    },
+
+    "establishment_pre_engagement": {
+      "$comment": "After intake POST. Inspector has NOT engaged on any job yet. Continuity bridge must be structurally absent.",
+      "url_pattern": "/dashboard/request/:id/establishment",
+      "present": [
+        "request-establishment-page",
+        "establishment-title",
+        "establishment-state",
+        "establishment-vehicle",
+        "establishment-location",
+        "establishment-references",
+        "establishment-request-detail-link",
+        "establishment-requests-list-link"
+      ],
+      "absent": [
+        "establishment-continuity-bridge",
+        "establishment-continuity-link"
+      ]
+    },
+
+    "cognition_forming": {
+      "$comment": "Pre-delivery cognition. Single forming line; 4-section document MUST be structurally absent (count == 0). No skeleton DOM.",
+      "url_pattern": "/dashboard/inspection/:jobId/report-cognition",
+      "state": "forming",
+      "present": [
+        "report-cognition-page",
+        "cognition-forming-state"
+      ],
+      "absent": [
+        "cognition-document",
+        "cognition-structurally-matters",
+        "cognition-remains-uncertain",
+        "cognition-supports-interpretation",
+        "cognition-may-require-review"
+      ]
+    },
+
+    "continuity_forming": {
+      "$comment": "Pre-delivery continuity. Cognition bridge link must be absent.",
+      "url_pattern": "/dashboard/inspection/:jobId/continuity",
+      "state": "forming|accumulating|established",
+      "present": [
+        "inspection-continuity-page",
+        "continuity-state",
+        "continuity-interpretation"
+      ],
+      "absent": [
+        "continuity-cognition-bridge",
+        "continuity-cognition-link"
+      ]
+    }
+  },
+
+  "surface_source_paths": {
+    "$comment": "File globs that the static scanner walks. Each surface lists its source files + which forbidden/required groups apply.",
+
+    "intake_web": {
+      "files": ["web-app/src/pages/customer/RequestIntakePage.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "rejection_punitive", "celebration"],
+      "required_group": "intake"
+    },
+    "intake_mobile": {
+      "files": ["frontend/app/customer/request/new.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "rejection_punitive", "celebration"],
+      "required_group": "intake"
+    },
+    "establishment_web": {
+      "files": ["web-app/src/pages/customer/RequestEstablishmentPage.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "rejection_punitive", "celebration"],
+      "required_group": "establishment"
+    },
+    "establishment_mobile": {
+      "files": ["frontend/app/customer/request/[id]/establishment.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "rejection_punitive", "celebration"],
+      "required_group": "establishment"
+    },
+    "continuity_web": {
+      "files": ["web-app/src/pages/customer/InspectionContinuityPage.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking"],
+      "required_group": "continuity"
+    },
+    "continuity_mobile": {
+      "files": ["frontend/app/customer/inspection/[jobId]/continuity.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking"],
+      "required_group": "continuity"
+    },
+    "cognition_web": {
+      "files": ["web-app/src/pages/customer/ReportCognitionPage.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "celebration"],
+      "required_group": "cognition"
+    },
+    "cognition_mobile": {
+      "files": ["frontend/app/customer/inspection/[jobId]/report-cognition.tsx"],
+      "forbidden_groups": ["cognition_noise", "operational_leak", "urgency_theatre", "form_thinking", "celebration"],
+      "required_group": "cognition"
+    }
+  }
+}

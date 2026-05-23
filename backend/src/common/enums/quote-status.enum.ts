@@ -1,0 +1,14 @@
+export enum QuoteStatus {
+  OPEN = 'OPEN',
+  RESPONDED = 'RESPONDED',
+  ACCEPTED = 'ACCEPTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ResponseStatus {
+  ACTIVE = 'ACTIVE',
+  WITHDRAWN = 'WITHDRAWN',
+  SELECTED = 'SELECTED',
+  REJECTED = 'REJECTED',
+}

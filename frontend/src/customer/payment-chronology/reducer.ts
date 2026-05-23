@@ -1,0 +1,103 @@
+/**
+ * P0.b.C.i — Surface-local reducer for customer payment chronology.
+ *
+ * Discipline (copied DOCTRINALLY from booking-timeline customer reducer,
+ * but with its OWN file and its OWN state shape — not a shared kit):
+ *
+ *   * REST snapshot is authoritative. `hydrate` and `reconcile` REPLACE
+ *     state, they never merge "best of both".
+ *   * `append` inserts a single WS-delivered event ONLY when its `id` is
+ *     unseen. Dedup is by row id (uuid4 from writer — globally unique).
+ *   * No optimistic updates. No invented rows.
+ *   * Sort order: ascending by `at`. Rows with falsy `at` go to the tail.
+ *
+ * This file is INTENTIONALLY local to `src/customer/payment-chronology/`.
+ * Do NOT move it to `src/shared/`. The admin forensic reducer lives in
+ * its OWN folder with its OWN action shape, because that surface speaks
+ * a different ontology (`payment-forensic.admin` ≠ `payment-chronology.customer`).
+ */
+
+import type { CustomerPaymentEvent } from './types';
+
+export interface CustomerPaymentChronologyState {
+  events: CustomerPaymentEvent[];
+  /** Dedup index — O(1) append check. */
+  seenIds: Set<string>;
+}
+
+export type CustomerPaymentChronologyAction =
+  | { type: 'hydrate'; events: CustomerPaymentEvent[] }
+  | { type: 'reconcile'; events: CustomerPaymentEvent[] }
+  | { type: 'append'; event: CustomerPaymentEvent }
+  | { type: 'reset' };
+
+export const initialCustomerPaymentChronologyState: CustomerPaymentChronologyState = {
+  events: [],
+  seenIds: new Set(),
+};
+
+/**
+ * Stable sort: timestamp ascending, null-last. Tiebreak by row id
+ * lexicographically — deterministic across renders, so FlatList keeps
+ * stable keys when two rows share `at`.
+ */
+function sortByAt(events: CustomerPaymentEvent[]): CustomerPaymentEvent[] {
+  return [...events].sort((a, b) => {
+    const at = a.at;
+    const bt = b.at;
+    if (at !== bt) {
+      if (!at) return 1;
+      if (!bt) return -1;
+      return at < bt ? -1 : 1;
+    }
+    const ai = a.id || '';
+    const bi = b.id || '';
+    if (ai === bi) return 0;
+    return ai < bi ? -1 : 1;
+  });
+}
+
+/** Stable React list key — exported so the screen does not invent its own. */
+export function dedupKey(event: CustomerPaymentEvent): string {
+  return event.id;
+}
+
+export function customerPaymentChronologyReducer(
+  state: CustomerPaymentChronologyState,
+  action: CustomerPaymentChronologyAction
+): CustomerPaymentChronologyState {
+  switch (action.type) {
+    case 'hydrate':
+    case 'reconcile': {
+      // REST wins. Drop any locally appended WS frames that the server
+      // does not include in the new snapshot.
+      const seen = new Set<string>();
+      const kept: CustomerPaymentEvent[] = [];
+      for (const e of action.events) {
+        if (!e?.id) continue;
+        if (seen.has(e.id)) continue;
+        seen.add(e.id);
+        kept.push(e);
+      }
+      return { events: sortByAt(kept), seenIds: seen };
+    }
+
+    case 'append': {
+      const id = action.event?.id;
+      if (!id) return state;
+      if (state.seenIds.has(id)) return state;
+      const seen = new Set(state.seenIds);
+      seen.add(id);
+      return {
+        events: sortByAt([...state.events, action.event]),
+        seenIds: seen,
+      };
+    }
+
+    case 'reset':
+      return initialCustomerPaymentChronologyState;
+
+    default:
+      return state;
+  }
+}

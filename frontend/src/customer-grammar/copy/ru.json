@@ -1,0 +1,79 @@
+{
+  "ui": {
+    "common.back": "Назад",
+    "common.refresh": "Обновить",
+    "common.reading": "Чтение…",
+    "common.dash": "—",
+    "common.lastRead": "Последнее чтение {{date}}",
+
+    "timeline.kicker": "ОСМОТР",
+    "timeline.title": "Ход проверки",
+    "timeline.empty": "Истории пока нет. Потяните вниз, как только инспектор начнёт.",
+    "timeline.crossToContinuity": "Текущее состояние",
+    "timeline.crossToReport": "Отчёт",
+    "timeline.error.notAvailable": "Осмотр недоступен.",
+    "timeline.error.auth": "Требуется вход.",
+    "timeline.error.load": "Не удалось загрузить историю.",
+
+    "continuity.kicker": "ОСМОТР",
+    "continuity.title": "Непрерывность",
+    "continuity.error.notAvailable": "Осмотр недоступен.",
+    "continuity.error.auth": "Требуется вход.",
+    "continuity.error.load": "Не удалось загрузить состояние осмотра.",
+    "continuity.insufficient": "Непрерывность осмотра ещё не установлена.",
+    "continuity.section.state": "Текущее состояние непрерывности",
+    "continuity.section.interpretation": "Интерпретация",
+    "continuity.section.events": "События непрерывности",
+    "continuity.events.empty": "События ещё не зафиксированы.",
+    "continuity.maturity.forming": "Формируется",
+    "continuity.maturity.accumulating": "Накапливается",
+    "continuity.maturity.established": "Установлено",
+    "continuity.maturity.delivered": "Передано",
+    "continuity.navToHistory": "Подробный ход проверки",
+
+    "cognition.title": "Интерпретация осмотра",
+    "cognition.loading": "Загрузка…",
+    "cognition.error.notAvailable": "Интерпретация недоступна.",
+    "cognition.error.auth": "Требуется вход.",
+    "cognition.error.load": "Не удалось загрузить интерпретацию.",
+    "cognition.refresh": "Обновить интерпретацию",
+    "cognition.lastInterpreted": "Последняя интерпретация: {{date}}",
+    "cognition.navToHistory": "Как мы сюда пришли"
+  },
+  "events": {
+    "inspection.started":           { "title": "Инспектор приступил к осмотру",        "icon": "play-circle-outline" },
+    "report.submitted":             { "title": "Инспектор завершил отчёт",             "icon": "checkmark-done" },
+    "media.uploaded.vin":           { "title": "Сделано фото для идентификации авто",  "icon": "camera-outline" },
+    "media.uploaded.odometer":      { "title": "Снят пробег автомобиля",               "icon": "camera-outline" },
+    "media.uploaded.damage":        { "title": "Сделано детальное фото",               "icon": "camera-outline" },
+    "media.uploaded.registration":  { "title": "Снят документ на автомобиль",          "icon": "document-outline" },
+    "media.uploaded.engine":        { "title": "Сделано фото моторного отсека",        "icon": "camera-outline" },
+    "media.uploaded.interior":      { "title": "Сделано фото салона",                  "icon": "camera-outline" },
+    "media.uploaded.general":       { "title": "Сделано фото",                         "icon": "camera-outline" },
+    "media.uploaded":               { "title": "Сделано фото",                         "icon": "camera-outline" },
+    "item.flagged_critical":        { "title": "Инспектор отметил особенность",        "icon": "eye-outline" },
+    "item.flagged_warning":         { "title": "Инспектор отметил наблюдение",         "icon": "eye-outline" }
+  },
+  "notifications": {
+    "inspection.started": {
+      "push":  { "title": "Обновление осмотра",     "body": "Осмотр начался." },
+      "email": { "title": "Осмотр автомобиля начался", "body": "Инспектор приступил к осмотру вашего автомобиля. Вы получите следующее сообщение, как только отчёт будет готов." },
+      "sms":   { "title": null,                     "body": "Осмотр вашего автомобиля начался." }
+    },
+    "report.submitted": {
+      "push":  { "title": "Отчёт осмотра",          "body": "Отчёт готов." },
+      "email": { "title": "Отчёт по осмотру готов", "body": "Инспектор завершил отчёт по вашему автомобилю. Откройте отчёт, чтобы ознакомиться с осмотром и принять решение." },
+      "sms":   { "title": null,                     "body": "Отчёт по осмотру готов." }
+    },
+    "item.flagged_critical": {
+      "push":  { "title": "Обновление осмотра",                "body": "Во время осмотра отмечена особенность." },
+      "email": { "title": "Особенность зафиксирована в осмотре", "body": "Во время осмотра инспектор отметил особенность на вашем автомобиле. Подробности будут доступны в отчёте, как только он будет передан." },
+      "sms":   { "title": null,                                "body": "В осмотре отмечена особенность. Подробности в отчёте." }
+    },
+    "item.flagged_warning": {
+      "push":  { "title": "Обновление осмотра",                  "body": "Во время осмотра отмечено наблюдение." },
+      "email": { "title": "Наблюдение зафиксировано в осмотре",  "body": "Во время осмотра инспектор отметил наблюдение по вашему автомобилю. Подробности будут доступны в отчёте, как только он будет передан." },
+      "sms":   { "title": null,                                  "body": "В осмотре отмечено наблюдение. Подробности в отчёте." }
+    }
+  }
+}

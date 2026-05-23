@@ -1,0 +1,45 @@
+{
+  "_doc": "Customer-Deep-Link-1 — grammar-owned semantic destination map. Lives next to copy/{en,de,ru}.json so the grammar kernel owns BOTH narrative and routing. Transports (push/email/sms/in-app) resolve a (surface, params) tuple to their own concrete URL — they do NOT make semantic destination decisions. Locale-invariant by design: there is no per-language deep-link map.",
+
+  "_invariants": "1) Every key in EVENT_TO_SURFACE must be on the customer notification allowlist (Customer-Notify-1 NotificationKey). 2) Surface value must be in SURFACES list. 3) Route templates must reference only declared params. 4) Forbidden-route eventTypes (ocr.*/correlation.*/evidence.*/internal.*/suspicion.*) NEVER appear here. 5) routes.mobile and routes.web MUST both be present for every surface — channel isolation is for tone, not for destination.",
+
+  "surfaces": ["continuity", "timeline", "report-cognition"],
+
+  "event_to_surface": {
+    "inspection.started":    "continuity",
+    "report.submitted":      "report-cognition",
+    "item.flagged_critical": "timeline",
+    "item.flagged_warning":  "timeline"
+  },
+
+  "params_required": {
+    "continuity":       ["jobId"],
+    "timeline":         ["jobId"],
+    "report-cognition": ["jobId"]
+  },
+
+  "params_optional": {
+    "continuity":       [],
+    "timeline":         ["itemId"],
+    "report-cognition": []
+  },
+
+  "_route_template_doc": "Tokens in {curly braces} are bound from `params`. Templates with optional params append `?focus={itemId}` only when itemId is bound. mobile = Expo Router path. web = Vite SPA path on the customer web surface. Email CTAs reuse the web route. SMS does not carry URLs in Notify-1/2/3 — sms transport ignores routes by design.",
+
+  "routes": {
+    "continuity": {
+      "mobile": "/customer/inspection/{jobId}/continuity",
+      "web":    "/customer/inspection/{jobId}/continuity"
+    },
+    "timeline": {
+      "mobile": "/customer/inspection/{jobId}/timeline",
+      "web":    "/customer/inspection/{jobId}/timeline"
+    },
+    "report-cognition": {
+      "mobile": "/customer/inspection/{jobId}/cognition",
+      "web":    "/customer/inspection/{jobId}/cognition"
+    }
+  },
+
+  "_focus_token": "When `itemId` is bound for a timeline destination, append `?focus={itemId}` to both mobile and web routes. Other surfaces ignore itemId."
+}

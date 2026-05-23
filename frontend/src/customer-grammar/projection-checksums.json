@@ -1,0 +1,31 @@
+{
+  "_doc": "Projection checksums per namespace × locale. SHA-256 over stable-serialised projection output. Namespaces (timeline / notifications.push|email|sms) isolate semantic drift so a notification change cannot masquerade as a timeline change. DO NOT hand-edit. Regenerate via `node scripts/check-projection-checksum.mjs --update` and commit IN THE SAME PR as the semantic change. See POLICY.md.",
+  "fixture": "src/customer-grammar/test-fixtures/timeline-mock.json",
+  "algorithm": "sha256",
+  "generatedAt": "2026-05-15T07:15:16.612Z",
+  "checksums": {
+    "timeline": {
+      "en": "d4c29dd2586a48751d62cb3b39e5a01f197d91d477fcd7d804906011a9d9ff2e",
+      "de": "a881a8ec71ced4d89bd426a4ba2bb81e75c61024195080ac9b998f9d815478ff",
+      "ru": "1783fc365c5032b8e2c60c8c873f4c2ad72ce70490f5e767130d2e2b7e339848"
+    },
+    "notifications": {
+      "push": {
+        "en": "44b597174657dcfd9c89bcc70c2b87c58a57c0f171e882530da9788708f91aa7",
+        "de": "8bcb4ba6986be64eb3506460c8802459993b1d1eda81e7b093f55435b265d641",
+        "ru": "eca50ba3b41e373cf205df3350dcec29dc96d32ebb499e1d825e0b6af499f4b5"
+      },
+      "email": {
+        "en": "0f990b00ec1f62884ea35c884bad6a1fbb8512b7e1ae44a45f0f487014adf094",
+        "de": "d311f946453eef6b61009cf02a3ccad99b09980e2e846c74c20a51345ba745a3",
+        "ru": "24a4eda603c54a2f698628c86396220ac6d3b9f09aae800da07d09d73fcbae23"
+      },
+      "sms": {
+        "en": "8660234b766f60f3942a5dba3d2784ba510f40c13e880c9a39f532d4108082c1",
+        "de": "009123dbed14d2c0e612e278e869465239b3a5d0bb7dc8f4afdfb6152f44dd9c",
+        "ru": "cca4cd1bf6d769221cdbbb4b4ac4fa380bb274b46ce932d3420262a060e7d8c1"
+      }
+    },
+    "deep_links": "cda1002b03bb5762939cf098f11316383ef90fd30af6617d467041bccd69f3b6"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "ui": {
+    "common.back": "Back",
+    "common.refresh": "Refresh",
+    "common.reading": "Reading…",
+    "common.dash": "—",
+    "common.lastRead": "Last read {{date}}",
+
+    "timeline.kicker": "INSPECTION",
+    "timeline.title": "Process history",
+    "timeline.empty": "No inspection history yet. Pull to refresh once the inspector starts.",
+    "timeline.crossToContinuity": "Current state",
+    "timeline.crossToReport": "Report",
+    "timeline.error.notAvailable": "Inspection not available.",
+    "timeline.error.auth": "Sign in required.",
+    "timeline.error.load": "Could not load inspection history.",
+
+    "continuity.kicker": "INSPECTION",
+    "continuity.title": "Continuity",
+    "continuity.error.notAvailable": "Inspection not available.",
+    "continuity.error.auth": "Sign in required.",
+    "continuity.error.load": "Could not load inspection continuity.",
+    "continuity.insufficient": "Inspection continuity not yet established.",
+    "continuity.section.state": "Current continuity state",
+    "continuity.section.interpretation": "Interpretation",
+    "continuity.section.events": "Continuity events",
+    "continuity.events.empty": "No continuity events recorded yet.",
+    "continuity.maturity.forming": "Forming",
+    "continuity.maturity.accumulating": "Accumulating",
+    "continuity.maturity.established": "Established",
+    "continuity.maturity.delivered": "Delivered",
+    "continuity.navToHistory": "View detailed history",
+
+    "cognition.title": "Inspection interpretation",
+    "cognition.loading": "Loading…",
+    "cognition.error.notAvailable": "Interpretation not available.",
+    "cognition.error.auth": "Sign in required.",
+    "cognition.error.load": "Could not load interpretation.",
+    "cognition.refresh": "Refresh interpretation",
+    "cognition.lastInterpreted": "Last interpreted: {{date}}",
+    "cognition.navToHistory": "How we got here"
+  },
+  "events": {
+    "inspection.started":           { "title": "Inspector began the inspection",        "icon": "play-circle-outline" },
+    "report.submitted":             { "title": "Inspector finished the report",         "icon": "checkmark-done" },
+    "media.uploaded.vin":           { "title": "Captured vehicle identification photo", "icon": "camera-outline" },
+    "media.uploaded.odometer":      { "title": "Captured odometer reading",             "icon": "camera-outline" },
+    "media.uploaded.damage":        { "title": "Captured a detail photo",               "icon": "camera-outline" },
+    "media.uploaded.registration":  { "title": "Captured a registration document",      "icon": "document-outline" },
+    "media.uploaded.engine":        { "title": "Captured an engine area photo",         "icon": "camera-outline" },
+    "media.uploaded.interior":      { "title": "Captured an interior photo",            "icon": "camera-outline" },
+    "media.uploaded.general":       { "title": "Captured a photo",                      "icon": "camera-outline" },
+    "media.uploaded":               { "title": "Captured a photo",                      "icon": "camera-outline" },
+    "item.flagged_critical":        { "title": "Inspector noted a concern",             "icon": "eye-outline" },
+    "item.flagged_warning":         { "title": "Inspector noted an observation",        "icon": "eye-outline" }
+  },
+  "notifications": {
+    "inspection.started": {
+      "push":  { "title": "Inspection update",         "body": "Your inspection has begun." },
+      "email": { "title": "Your inspection has begun", "body": "The inspector is now on site and has started the inspection of your vehicle. You will receive another message when the report is ready." },
+      "sms":   { "title": null,                        "body": "Your vehicle inspection has begun." }
+    },
+    "report.submitted": {
+      "push":  { "title": "Inspection report",                "body": "The report is ready." },
+      "email": { "title": "Your inspection report is ready",  "body": "The inspector has finished the report for your vehicle. Open the report to review the inspection and decide your next step." },
+      "sms":   { "title": null,                               "body": "Your inspection report is ready." }
+    },
+    "item.flagged_critical": {
+      "push":  { "title": "Inspection update",                 "body": "A point was noted during your inspection." },
+      "email": { "title": "A point was noted in your inspection", "body": "During the inspection, the inspector noted a point on your vehicle. You will see the exact entry in the inspection report once it is delivered." },
+      "sms":   { "title": null,                                "body": "A point was noted in your inspection. The report will follow." }
+    },
+    "item.flagged_warning": {
+      "push":  { "title": "Inspection update",                       "body": "An observation was made during your inspection." },
+      "email": { "title": "An observation was noted in your inspection", "body": "During the inspection, the inspector noted an observation on your vehicle. You will see the exact entry in the inspection report once it is delivered." },
+      "sms":   { "title": null,                                      "body": "An observation was noted in your inspection. The report will follow." }
+    }
+  }
+}

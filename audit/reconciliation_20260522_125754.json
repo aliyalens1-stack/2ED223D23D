@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-05-22T12:57:54.409464+00:00",
+  "scope": "service_payments (READ-ONLY snapshot)",
+  "totalDocs": 0,
+  "limit": null,
+  "buckets": {
+    "outstanding_escrow": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    },
+    "settled_to_provider": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    },
+    "refunded_to_customer": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    },
+    "terminal_failure": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    },
+    "pre_escrow": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    },
+    "unknown": {
+      "statuses": [],
+      "count": 0,
+      "gross_by_currency": {},
+      "payout_by_currency": {},
+      "refund_by_currency": {}
+    }
+  },
+  "divergenceCountsByCode": {},
+  "divergences": [],
+  "topProvidersOutstanding": [],
+  "topCustomersOutstanding": []
+}

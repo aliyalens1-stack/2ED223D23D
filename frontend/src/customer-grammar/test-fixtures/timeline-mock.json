@@ -1,0 +1,73 @@
+{
+  "_doc": "Canonical timeline-event mock for projection-parity tests. Single source of truth for what the operational event stream looks like — includes events that MUST be customer-visible on timeline, events that MUST be silently dropped, and events under forbiddenRoutedIds that MUST NOT produce a notification on ANY channel (route-stage drop). Adding a new operational event type here without updating the customer-grammar copy tables is a parity-test failure (intentional).",
+
+  "events": [
+    { "id": "ev-001", "eventType": "inspection.started",          "at": "2026-01-15T08:00:00.000Z" },
+    { "id": "ev-002", "eventType": "media.uploaded.vin",          "at": "2026-01-15T08:02:11.000Z" },
+    { "id": "ev-003", "eventType": "ocr.vin_detected",            "at": "2026-01-15T08:02:13.000Z", "payload": { "confidence": 0.94 } },
+    { "id": "ev-004", "eventType": "media.uploaded.odometer",     "at": "2026-01-15T08:03:40.000Z" },
+    { "id": "ev-005", "eventType": "ocr.odometer_detected",       "at": "2026-01-15T08:03:42.000Z", "payload": { "value": 142500 } },
+    { "id": "ev-006", "eventType": "media.uploaded.registration", "at": "2026-01-15T08:05:00.000Z" },
+    { "id": "ev-007", "eventType": "media.uploaded.engine",       "at": "2026-01-15T08:08:14.000Z" },
+    { "id": "ev-008", "eventType": "media.uploaded.interior",     "at": "2026-01-15T08:10:02.000Z" },
+    { "id": "ev-009", "eventType": "media.uploaded.damage",       "at": "2026-01-15T08:12:30.000Z" },
+    { "id": "ev-010", "eventType": "media.uploaded.undercarriage","at": "2026-01-15T08:14:45.000Z" },
+    { "id": "ev-011", "eventType": "media.uploaded.general",      "at": "2026-01-15T08:15:30.000Z" },
+    { "id": "ev-012", "eventType": "media.uploaded",              "at": "2026-01-15T08:16:30.000Z" },
+    { "id": "ev-013", "eventType": "correlation.spatial_anomaly", "at": "2026-01-15T08:18:00.000Z", "payload": { "distance_m": 240 } },
+    { "id": "ev-014", "eventType": "item.flagged_critical",       "at": "2026-01-15T08:20:00.000Z", "payload": { "item": "brake-disc-front-left" } },
+    { "id": "ev-015", "eventType": "item.flagged_warning",        "at": "2026-01-15T08:21:30.000Z", "payload": { "item": "wiper-blade-rear" } },
+    { "id": "ev-016", "eventType": "item.flagged_ok",             "at": "2026-01-15T08:22:00.000Z" },
+    { "id": "ev-017", "eventType": "evidence.gaps_overridden",    "at": "2026-01-15T08:24:00.000Z" },
+    { "id": "ev-018", "eventType": "internal.audit.replay",       "at": "2026-01-15T08:25:00.000Z" },
+    { "id": "ev-019", "eventType": "suspicion.vin_mismatch",      "at": "2026-01-15T08:26:00.000Z" },
+    { "id": "ev-020", "eventType": "report.submitted",            "at": "2026-01-15T08:30:00.000Z" }
+  ],
+
+  "expectedRenderedIds": [
+    "ev-001",
+    "ev-002",
+    "ev-004",
+    "ev-006",
+    "ev-007",
+    "ev-008",
+    "ev-009",
+    "ev-010",
+    "ev-011",
+    "ev-012",
+    "ev-014",
+    "ev-015",
+    "ev-020"
+  ],
+
+  "expectedDroppedIds": [
+    "ev-003",
+    "ev-005",
+    "ev-013",
+    "ev-016",
+    "ev-017",
+    "ev-018",
+    "ev-019"
+  ],
+
+  "expectedFallbackEventIds": [
+    "ev-010"
+  ],
+
+  "expectedNotifiedIds": [
+    "ev-001",
+    "ev-014",
+    "ev-015",
+    "ev-020"
+  ],
+
+  "_forbiddenRoutedIds_doc": "Events whose eventType matches one of the FORBIDDEN_ROUTE_PREFIXES (ocr., correlation., evidence., internal., suspicion.). These MUST be dropped at the routing stage of the notification projector — they must never produce a notification row on any channel. Parity test I11 covers all five prefixes.",
+  "forbiddenRoutedIds": [
+    "ev-003",
+    "ev-005",
+    "ev-013",
+    "ev-017",
+    "ev-018",
+    "ev-019"
+  ]
+}

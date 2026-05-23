@@ -1,0 +1,42 @@
+[
+  {
+    "content": "Backup current /app contents (.env files protected)",
+    "status": "completed"
+  },
+  {
+    "content": "Copy repo (backend, frontend, admin, web-app, shared, memory, docs, ops, tests) into /app",
+    "status": "completed"
+  },
+  {
+    "content": "Restore .env files + add EXPO_PUBLIC_BACKEND_URL",
+    "status": "completed"
+  },
+  {
+    "content": "Install backend Python deps (pip install -r requirements.txt)",
+    "status": "completed"
+  },
+  {
+    "content": "Install frontend (Expo) deps via yarn",
+    "status": "completed"
+  },
+  {
+    "content": "supervisorctl restart backend frontend, verify RUNNING",
+    "status": "completed"
+  },
+  {
+    "content": "Smoke tests: /api/health, /api/auth/login (3 roles), /api/services",
+    "status": "completed"
+  },
+  {
+    "content": "Screenshot preview URL, validate UI renders",
+    "status": "completed"
+  },
+  {
+    "content": "Produce fresh AUDIT report (E2 round, 2026-05-23)",
+    "status": "completed"
+  },
+  {
+    "content": "Present audit & ask user where to focus next",
+    "status": "completed"
+  }
+]
